@@ -1,90 +1,17 @@
-import traceback
-import random
-
 import cv2
 import numpy as np
-from PIL import Image
+from keras.models import load_model
 
+model = load_model("model.h5")
 
-def demo():
-    cap = cv2.VideoCapture(0)
-    while 1:
-        try:
-            _, frame = cap.read()
-            frame = cv2.flip(frame, 1)
-            # draw a rectangle where to place the hand
-            cv2.rectangle(frame, (100, 100), (300, 300), (255, 255, 255), 0)
+list_of_gestures = ['blank', 'ok', 'thumbsup', 'thumbsdown', 'fist', 'five']
+image = cv2.imread('data/thumbsup/thumbsup1627.jpg')
+gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+gray_image = cv2.resize(gray_image, (100, 120))
 
-            handRegion = frame[100:300, 100:300]
+gray_image = gray_image.reshape(1, 100, 120, 1)
 
-            # convert to different color spaces
-            hsvImage = cv2.cvtColor(handRegion, cv2.COLOR_BGR2HSV)
-            YCbCrImage = cv2.cvtColor(handRegion, cv2.COLOR_BGR2YCrCb)
+prediction = np.argmax(model.predict_on_batch(gray_image))
 
-            # define the threshold in HSV color space
-            min_hsv = np.array([0, 20, 70], dtype=np.uint8)
-            max_hsv = np.array([20, 255, 255], dtype=np.uint8)
+print(list_of_gestures[prediction])
 
-            # define the threshold in YCrCb color space
-            min_YCrCb = np.array([0, 132, 76], dtype=np.uint8)
-            max_YCrCb = np.array([255, 172, 128], dtype=np.uint8)
-
-            mask1 = cv2.inRange(hsvImage, min_hsv, max_hsv)
-            mask2 = cv2.inRange(YCbCrImage, min_YCrCb, max_YCrCb)
-            # apply AND to maximize results
-            result = cv2.bitwise_and(mask1, mask2)
-
-            # use dilate to fill dark spots
-            kernel = np.ones((3, 3), np.uint8)
-            result = cv2.dilate(result, kernel, iterations=4)
-
-            cv2.imshow('camera', frame)
-            cv2.imshow('result', result)
-        except:
-            traceback.print_exc()
-            break
-
-        k = cv2.waitKey(5) & 0xFF
-        if k == 27:
-            break
-
-    cv2.destroyAllWindows()
-    cap.release()
-
-
-def skinDetectionInImage(image):
-    path = image
-    image = cv2.imread(image, 1)
-    hsvImage = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    YCbCrImage = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
-
-    # define the threshold in HSV color space
-    min_hsv = np.array([0, 20, 70], dtype=np.uint8)
-    max_hsv = np.array([20, 255, 255], dtype=np.uint8)
-
-    # define the threshold in YCrCb color space
-    min_YCrCb = np.array([0, 132, 76], dtype=np.uint8)
-    max_YCrCb = np.array([255, 172, 128], dtype=np.uint8)
-
-    mask1 = cv2.inRange(hsvImage, min_hsv, max_hsv)
-    mask2 = cv2.inRange(YCbCrImage, min_YCrCb, max_YCrCb)
-
-    # apply AND to maximize results
-    result = cv2.bitwise_and(mask1, mask2)
-
-    # use dilate to fill dark spots
-    kernel = np.ones((3, 3), np.uint8)
-    result = cv2.dilate(result, kernel, iterations=4)
-    cv2.imwrite('data/results/' + path.split("/")[3], result)
-
-
-def applySkinColorDetectionToRandomImages():
-    f = open("data/HandInfo.csv", "r")
-    lines = f.readlines()
-    rand_indexes = random.sample(range(1, len(lines)), 20)
-    for index in rand_indexes:
-        image_path = "data/Hands/Hands/" + lines[index].split(",")[7].strip("\"")
-        skinDetectionInImage(image_path)
-
-
-applySkinColorDetectionToRandomImages()
