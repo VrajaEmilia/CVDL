@@ -34,7 +34,7 @@ if __name__ == "__main__":
                         (255, 255, 255), 1)
         else:
             hand = cv2.absdiff(bg, gray)
-            _, thresholded = cv2.threshold(hand, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            _, thresholded = cv2.threshold(hand, 50, 255,cv2.THRESH_BINARY)
             resizedHand = cv2.resize(thresholded, (100, 120))
             cv2.imshow("hand", thresholded)
             resizedHand = resizedHand.reshape(1, 100, 120, 1)
